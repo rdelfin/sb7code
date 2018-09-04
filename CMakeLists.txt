@@ -2,6 +2,16 @@ cmake_minimum_required (VERSION 2.6)
 
 project (superbible7)
 
+MACRO(SUBDIRLIST result curdir)
+  FILE(GLOB children ${curdir}/*)
+  SET(dirlist "")
+  FOREACH(child ${children})
+    get_filename_component(folder ${child} NAME)
+    LIST(APPEND dirlist ${folder})
+  ENDFOREACH()
+  SET(${result} ${dirlist})
+ENDMACRO()
+
 LINK_DIRECTORIES( ${CMAKE_SOURCE_DIR}/lib )
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -25,7 +35,7 @@ set(COMMON_LIBS sb7 optimized glfw3 debug glfw3_d ${GLFW_LIBRARIES} ${OPENGL_LIB
 elseif (UNIX)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLFW REQUIRED glfw3)
-set(COMMON_LIBS sb7 glfw3 X11 Xrandr Xinerama Xi Xxf86vm Xcursor GL rt dl)
+set(COMMON_LIBS sb7 glfw X11 Xrandr Xinerama Xi Xxf86vm Xcursor GL rt dl)
 else()
 set(COMMON_LIBS sb7)
 endif()
@@ -130,6 +140,8 @@ set(EXAMPLES
   wrapmodes
 )
 
+SUBDIRLIST(MY_EXAMPLES src/examples)
+
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -142,6 +154,16 @@ foreach(EXAMPLE ${EXAMPLES})
   target_link_libraries(${EXAMPLE} ${COMMON_LIBS})
   if(MSVC)
     configure_file(${PROJECT_SOURCE_DIR}/build/templates/vs2013.vcxproj.user.in ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE}.vcxproj.user @ONLY)
+  endif(MSVC)
+endforeach(EXAMPLE)
+
+foreach(EXAMPLE ${MY_EXAMPLES})
+  FILE(GLOB srcs src/examples/${EXAMPLE}/*.cpp)
+  set(EXAMPLE_NAME "example_${EXAMPLE}")
+  add_executable(${EXAMPLE_NAME} WIN32 ${srcs})
+  target_link_libraries(${EXAMPLE_NAME} ${COMMON_LIBS})
+  if(MSVC)
+    configure_file(${PROJECT_SOURCE_DIR}/build/templates/vs2013.vcxproj.user.in ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE_NAME}.vcxproj.user @ONLY)
   endif(MSVC)
 endforeach(EXAMPLE)
 
